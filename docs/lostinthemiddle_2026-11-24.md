@@ -23,6 +23,9 @@ https://arxiv.org/abs/2307.03172
 - middle: 9/12 (0.750)
 - end: 11/12 (0.917)
 
+Reproduced on a MacBook Air, 2026-11-24: identical results,
+start 12/12, middle 9/12, end 11/12.
+
 The middle loses. All three middle misses picked the wrong
 document's answer: q04 answered Petra Lindqvist instead of
 Elena Voss, q06 answered Mount Brannock instead of Mount
