@@ -1,1 +1,50 @@
-# LostInTheMiddle
+# Lost in the Middle harness
+
+Rebuilds the Liu et al. test from scratch: same question, same
+documents, the answer document moved from the start to the middle
+to the end. Measures accuracy by answer position.
+
+Paper: https://arxiv.org/abs/2307.03172
+
+## Why
+
+Models get long contexts and still miss the answer when it sits
+in the middle. This harness measures that on a small local model
+instead of taking the paper's word for it.
+
+## How it works
+
+- 12 questions in `data/golden.jsonl`. The facts are invented,
+  so the model cannot answer from pretraining. It has to read
+  the context.
+- Each question has one gold document holding the answer and
+  8 distractor documents about similar invented entities.
+  All documents are 30-70 words, so length is not a cue.
+- Each question runs three times: gold document at the start,
+  the middle, and the end of 9 documents.
+- Scoring is a plain substring match on the answer. No LLM judge.
+
+## Model
+
+Qwen/Qwen2.5-0.5B-Instruct, local, greedy decoding. No API key,
+no paid service. The same model as the AgentOps Workbench brain.
+
+## Run it
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+.venv/bin/python -m pip install transformers
+.venv/bin/python harness.py            # full run, 12 questions x 3 positions
+.venv/bin/python harness.py --smoke    # 1 question, checks it runs
+```
+
+On a Mac, install torch without the `--index-url` flag:
+`.venv/bin/python -m pip install torch`
+
+Results go to `runs/results.jsonl`, with accuracy by position
+printed at the end.
+
+## Results
+
+See `docs/lostinthemiddle_2026-11-24.md`.
