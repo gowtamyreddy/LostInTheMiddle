@@ -20,6 +20,9 @@ model, one variable changed: 20 documents instead of 9, about
 - middle: 6/12 (0.500)
 - end: 11/12 (0.917)
 
+Reproduced on a MacBook Air, 2026-11-25: identical results,
+start 12/12, middle 6/12, end 11/12.
+
 Against the 9-document run (start 12/12, middle 9/12,
 end 11/12): the start and end did not move at all. The
 middle fell from 9 to 6.
