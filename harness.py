@@ -103,11 +103,11 @@ def score(reply, answer):
     return core in reply.lower()
 
 
-def evaluate(tok, model, cases, out_path):
+def evaluate(tok, model, cases, out_path, n_docs=9):
     results = []
     for case in cases:
         for position in POSITIONS:
-            docs = order_docs(case, position)
+            docs = order_docs(case, position, n_docs)
             reply = run_case(tok, model, case["question"], docs)
             correct = score(reply, case["answer"])
             results.append(
@@ -141,8 +141,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", default=MODEL_ID)
     parser.add_argument("--questions", type=int, default=None)
+    parser.add_argument("--num-docs", type=int, default=9)
     parser.add_argument("--smoke", action="store_true")
-    parser.add_argument("--out", default="runs/results.jsonl")
+    parser.add_argument("--out", default=None)
     parser.add_argument("--threads", type=int, default=2)
     args = parser.parse_args()
 
@@ -152,9 +153,14 @@ def main():
         cases = cases[:1]
     elif args.questions:
         cases = cases[: args.questions]
-    print(f"loaded {len(cases)} questions, model {args.model}")
+    print(f"loaded {len(cases)} questions, model {args.model}, "
+          f"{args.num_docs} docs")
     tok, model = load_model(args.model)
-    evaluate(tok, model, cases, ROOT / args.out)
+    out = args.out
+    if out is None:
+        out = (f"runs/results-{args.num_docs}docs.jsonl"
+               if args.num_docs != 9 else "runs/results.jsonl")
+    evaluate(tok, model, cases, ROOT / out, args.num_docs)
 
 
 if __name__ == "__main__":

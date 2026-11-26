@@ -35,7 +35,8 @@ no paid service. The same model as the AgentOps Workbench brain.
 python3 -m venv .venv
 .venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 .venv/bin/python -m pip install transformers
-.venv/bin/python harness.py            # full run, 12 questions x 3 positions
+.venv/bin/python harness.py            # full run, 12 questions x 3 positions, 9 docs
+.venv/bin/python harness.py --num-docs 20   # same, with 20 documents
 .venv/bin/python harness.py --smoke    # 1 question, checks it runs
 ```
 
@@ -47,4 +48,7 @@ printed at the end.
 
 ## Results
 
-See `docs/lostinthemiddle_2026-11-24.md`.
+- 9 documents: start 12/12, middle 9/12, end 11/12.
+  See `docs/lostinthemiddle_2026-11-24.md`.
+- 20 documents: start 12/12, middle 6/12, end 11/12.
+  See `docs/lostinthemiddle_20docs_2026-11-25.md`.
