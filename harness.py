@@ -40,18 +40,24 @@ def order_docs(case, position, n_docs=9):
     return docs
 
 
-def build_messages(question, docs):
+def build_messages(question, docs, prompt="direct"):
     numbered = "\n\n".join(
         f"Document {i + 1}:\n{d}" for i, d in enumerate(docs)
     )
+    if prompt == "quote":
+        system = (
+            "Answer the question using only the documents "
+            "below. First, quote the one document that answers "
+            "the question. Then give the answer on a line "
+            "starting with 'Answer:'."
+        )
+    else:
+        system = (
+            "Answer the question using only the documents "
+            "below. Reply with the answer only."
+        )
     return [
-        {
-            "role": "system",
-            "content": (
-                "Answer the question using only the documents "
-                "below. Reply with the answer only."
-            ),
-        },
+        {"role": "system", "content": system},
         {
             "role": "user",
             "content": f"{numbered}\n\nQuestion: {question}",
@@ -68,8 +74,8 @@ def load_model(model_id=MODEL_ID):
     return tok, model
 
 
-def run_case(tok, model, question, docs, max_new_tokens=40):
-    messages = build_messages(question, docs)
+def run_case(tok, model, question, docs, max_new_tokens=40, prompt="direct"):
+    messages = build_messages(question, docs, prompt)
     text = tok.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
@@ -87,6 +93,21 @@ def run_case(tok, model, question, docs, max_new_tokens=40):
     return reply.strip()
 
 
+def final_answer(reply):
+    """Text after the 'Answer:' line, if the model gave one.
+
+    The quote prompt asks the model to quote a document first.
+    Scoring the whole reply would count a correct quote as a
+    correct answer even if the final answer is wrong, so the
+    scorer measures the final answer only. Falls back to the
+    whole reply when no Answer: line is present.
+    """
+    idx = reply.lower().find("answer:")
+    if idx == -1:
+        return reply
+    return reply[idx + len("answer:"):]
+
+
 def score(reply, answer):
     """Case-insensitive substring match, ignoring a leading article.
 
@@ -100,20 +121,25 @@ def score(reply, answer):
         if core.startswith(article):
             core = core[len(article) :]
             break
-    return core in reply.lower()
+    return core in final_answer(reply).lower()
 
 
-def evaluate(tok, model, cases, out_path, n_docs=9):
+def evaluate(tok, model, cases, out_path, n_docs=9, prompt="direct"):
+    max_tokens = 120 if prompt == "quote" else 40
     results = []
     for case in cases:
         for position in POSITIONS:
             docs = order_docs(case, position, n_docs)
-            reply = run_case(tok, model, case["question"], docs)
+            reply = run_case(
+                tok, model, case["question"], docs,
+                max_new_tokens=max_tokens, prompt=prompt,
+            )
             correct = score(reply, case["answer"])
             results.append(
                 {
                     "id": case["id"],
                     "position": position,
+                    "prompt": prompt,
                     "question": case["question"],
                     "answer": case["answer"],
                     "reply": reply,
@@ -142,6 +168,8 @@ def main():
     parser.add_argument("--model", default=MODEL_ID)
     parser.add_argument("--questions", type=int, default=None)
     parser.add_argument("--num-docs", type=int, default=9)
+    parser.add_argument("--prompt", choices=["direct", "quote"],
+                        default="direct")
     parser.add_argument("--smoke", action="store_true")
     parser.add_argument("--out", default=None)
     parser.add_argument("--threads", type=int, default=2)
@@ -154,13 +182,16 @@ def main():
     elif args.questions:
         cases = cases[: args.questions]
     print(f"loaded {len(cases)} questions, model {args.model}, "
-          f"{args.num_docs} docs")
+          f"{args.num_docs} docs, prompt {args.prompt}")
     tok, model = load_model(args.model)
     out = args.out
     if out is None:
-        out = (f"runs/results-{args.num_docs}docs.jsonl"
-               if args.num_docs != 9 else "runs/results.jsonl")
-    evaluate(tok, model, cases, ROOT / out, args.num_docs)
+        base = (f"results-{args.num_docs}docs"
+                if args.num_docs != 9 else "results")
+        if args.prompt != "direct":
+            base += f"-{args.prompt}"
+        out = f"runs/{base}.jsonl"
+    evaluate(tok, model, cases, ROOT / out, args.num_docs, args.prompt)
 
 
 if __name__ == "__main__":
