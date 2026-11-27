@@ -24,6 +24,9 @@ on a line starting with 'Answer:'.
 - middle: 7/12 (0.583)
 - end: 11/12 (0.917)
 
+Reproduced on a MacBook Air, 2026-11-26: identical results,
+start 12/12, middle 7/12, end 11/12.
+
 Against the direct prompt at 20 documents (start 12/12,
 middle 6/12, end 11/12): the start and end did not move.
 The middle went from 6 to 7.
